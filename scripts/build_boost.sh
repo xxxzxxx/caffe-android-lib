@@ -11,9 +11,11 @@ else
 fi
 
 ANDROID_ABI=${ANDROID_ABI:-"armeabi-v7a with NEON"}
+
+ANDROID_ABIS=(`echo $ANDROID_ABI | tr -s ',' ' '`)
+
 WD=$(readlink -f "`dirname $0`/..")
 BOOST_ROOT=${WD}/boost
-BUILD_DIR=${BOOST_ROOT}/build
 INSTALL_DIR=${WD}/android_lib
 N_JOBS=${N_JOBS:-4}
 
@@ -22,20 +24,30 @@ cd "${BOOST_ROOT}"
 cd "${WD}"
 
 rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
+BUILD_ABI=""
+for ABI in ${ANDROID_ABIS[@]}; do
+    BUILD_DIR=${BOOST_ROOT}/build_android
+    mkdir -p "${BUILD_DIR}"
+    cd "${BUILD_DIR}"
 
-cmake -DCMAKE_TOOLCHAIN_FILE="${WD}/android-cmake/android.toolchain.cmake" \
-      -DANDROID_NDK="${NDK_ROOT}" \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DANDROID_ABI="${ANDROID_ABI}" \
-      -DANDROID_NATIVE_API_LEVEL=21 \
-      -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}/boost" \
-      ..
+    if [ "${ABI}" = "armeabi-v7a" ]; then
+        BUILD_ABI="armeabi-v7a-hard-softfp with NEON"
+    else
+        BUILD_ABI=${ABI}
+    fi
 
-make -j${N_JOBS}
-rm -rf "${INSTALL_DIR}/boost"
-make install/strip
+    cmake -DCMAKE_TOOLCHAIN_FILE="${WD}/android-cmake/android.toolchain.cmake" \
+        -DANDROID_NDK="${NDK_ROOT}" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DANDROID_ABI="${BUILD_ABI}" \
+        -DANDROID_NATIVE_API_LEVEL=21 \
+        -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}/boost/${ABI}" \
+        ..
 
-cd "${WD}"
-rm -rf "${BUILD_DIR}"
+    make -j${N_JOBS}
+    rm -rf "${INSTALL_DIR}/boost/${ABI}"
+    make install/strip
+
+    cd "${WD}"
+    rm -rf "${BUILD_DIR}"
+done

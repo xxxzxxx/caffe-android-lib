@@ -23,27 +23,45 @@ else
     API_LEVEL=21
 fi
 
-rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
+ANDROID_ABIS=(`echo $ANDROID_ABI | tr -s ',' ' '`)
+BUILD_ABI=""
+for ABI in ${ANDROID_ABIS[@]}; do
 
-cmake -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
-      -DCMAKE_TOOLCHAIN_FILE="${WD}/android-cmake/android.toolchain.cmake" \
-      -DANDROID_NDK="${NDK_ROOT}" \
-      -DANDROID_NATIVE_API_LEVEL=${API_LEVEL} \
-      -DANDROID_ABI="${ANDROID_ABI}" \
-      -D WITH_CUDA=OFF \
-      -D WITH_MATLAB=OFF \
-      -D BUILD_ANDROID_EXAMPLES=OFF \
-      -D BUILD_DOCS=OFF \
-      -D BUILD_PERF_TESTS=OFF \
-      -D BUILD_TESTS=OFF \
-      -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}/opencv" \
-      ../..
+    rm -rf "${BUILD_DIR}"
+    mkdir -p "${BUILD_DIR}"
+    cd "${BUILD_DIR}"
 
-make -j${N_JOBS}
-rm -rf "${INSTALL_DIR}/opencv"
-make install/strip
+    cd "${BUILD_DIR}"
+    if [ "${ABI}" = "armeabi-v7a" ]; then
+        BUILD_ABI="armeabi-v7a-hard-softfp with NEON"
+    else
+        BUILD_ABI=${ABI}
+    fi
+    echo "ABI=${ABI}"
+    echo "BUILD_ABI=${BUILD_ABI}"
 
-cd "${WD}"
-rm -rf "${BUILD_DIR}"
+    cmake -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+        -DCMAKE_TOOLCHAIN_FILE="${WD}/android-cmake/android.toolchain.cmake" \
+        -DANDROID_NDK="${NDK_ROOT}" \
+        -DANDROID_NATIVE_API_LEVEL=${API_LEVEL} \
+        -DANDROID_ABI="${BUILD_ABI}" \
+        -D WITH_CUDA=OFF \
+        -D WITH_MATLAB=OFF \
+        -D BUILD_WITH_STATIC_CRT=ON \
+        -D BUILD_SHARED_LIBS=OFF \
+        -D BUILD_opencv_java=OFF \
+        -D BUILD_opencv_python=OFF \
+        -D BUILD_ANDROID_EXAMPLES=OFF \
+        -D BUILD_DOCS=OFF \
+        -D BUILD_PERF_TESTS=OFF \
+        -D BUILD_TESTS=OFF \
+        -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}/opencv/${ABI}" \
+        ../..
+
+    make -j${N_JOBS}
+    rm -rf "${INSTALL_DIR}/opencv/${ABI}"
+    make install/strip
+
+    cd "${WD}"
+    rm -rf "${BUILD_DIR}"
+done
