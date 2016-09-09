@@ -1,24 +1,27 @@
 #!/usr/bin/env sh
 set -e
 
-if [ -z "$NDK_ROOT" ] && [ "$#" -eq 0 ]; then
+if [ "$#" -eq 0 ]; then
+    echo "      '${0} armeabi-v7a,arm64-v8a,x86,x86_64'"
+    exit 1
+elif [ -z "$NDK_ROOT" ]; then
     echo 'Either $NDK_ROOT should be set or provided as argument'
     echo "e.g., 'export NDK_ROOT=/path/to/ndk' or"
-    echo "      '${0} /path/to/ndk'"
     exit 1
-else
-    NDK_ROOT="${1:-${NDK_ROOT}}"
 fi
 
-ANDROID_ABI=${ANDROID_ABI:-"armeabi-v7a with NEON"}
+TARGET_ABI=${1:-"armeabi-v7a,arm64-v8a,x86,x86_64"}
+N_JOBS=${2:-"16"}
+TARGET_ABIS=(`echo $TARGET_ABI | tr -s ',' ' '`)
+TARGET_API_LEVEL=${EXPORT_TARGET_API_LEVEL:-"21"}
+
 LINK="https://github.com/gflags/gflags/archive/v2.1.2.tar.gz"
 TARBALL=gflags_v2.1.2.tar.gz
 WD=$(readlink -f "`dirname $0`/..")
 DOWNLOAD_DIR=${WD}/download
 GFLAGS_ROOT=${WD}/gflags-2.1.2
 BUILD_DIR=${GFLAGS_ROOT}/build
-INSTALL_DIR=${WD}/android_lib
-N_JOBS=${N_JOBS:-4}
+INSTALL_DIR=${WD}/3rdparty/android-${TARGET_API_LEVEL}
 
 [ ! -d ${DOWNLOAD_DIR} ] && mkdir -p ${DOWNLOAD_DIR}
 
@@ -31,9 +34,8 @@ if [ ! -d ${GFLAGS_ROOT} ]; then
     tar zxf ${TARBALL} -C "${WD}"
 fi
 
-ANDROID_ABIS=(`echo $ANDROID_ABI | tr -s ',' ' '`)
 BUILD_ABI=""
-for ABI in ${ANDROID_ABIS[@]}; do
+for ABI in ${TARGET_ABIS[@]}; do
     rm -rf "${BUILD_DIR}"
     mkdir -p "${BUILD_DIR}"
     cd "${BUILD_DIR}"
@@ -47,7 +49,7 @@ for ABI in ${ANDROID_ABIS[@]}; do
         -DANDROID_NDK="${NDK_ROOT}" \
         -DCMAKE_BUILD_TYPE=Release \
         -DANDROID_ABI="${BUILD_ABI}" \
-        -DANDROID_NATIVE_API_LEVEL=21 \
+        -DANDROID_NATIVE_API_LEVEL=${TARGET_API_LEVEL} \
         -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}/gflags/${ABI}" \
         ..
 
