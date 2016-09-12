@@ -1,9 +1,9 @@
 *.tar.bz2
 *.tar.gz
 3rdparty/
-boost/
 CaffeMobile/
 android_lib/*
 download/*
 gflags-2.1.2/
 boost/boost_?_??_0/
+.vscode

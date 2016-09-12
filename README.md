@@ -10,14 +10,21 @@ Porting [caffe](https://github.com/BVLC/caffe) to android platform
 * Switching BLAS type  open or eigen
 
 ## Build
-Tested with Android NDK r10e and cmake 3.4.2 on OSX
+Tested with Android NDK r10e and cmake 3.4.2 on OSX and Ubuntu 14.04
 
-greadlink make symbolic link readlik
+### Setup OSX
+android ndk has been installed
+export NDK_ROOT="<android-ndk-root-path>"
+Create a symbolic link of greadlink named readlink
+brew install coreutils gnu-sed gawk
+cd /usr/local/bin
+ln -s greadlink readlink
 
+### Run Build script
+cd <path/to/sourcedir>
 git clone --recursive https://github.com/xxxzxxx/caffe-android-lib.git
 cd caffe-android-lib
-export NDK_ROOT="<android-ndk-root-path>"
-./build_caffe.sh android-level<14 or 21> architecture<armeabi-v7a,arm64-v8a,x86,x86_64> build_jobs<number>
+./build_caffe.sh <android-api-level 14 or 21> <architecture armeabi-v7a,arm64-v8a,x86,x86_64> build_jobs<number>
 
 ## Issues
 
