@@ -1,14 +1,19 @@
 #!/usr/bin/env sh
 set -e
 
-if [ -z "$NDK_ROOT" ] && [ "$#" -eq 0 ]; then
+if [ "$#" -eq 0 ]; then
+    echo "      '${0} armeabi-v7a,arm64-v8a,x86,x86_64'"
+    exit 1
+elif [ -z "$NDK_ROOT" ]; then
     echo 'Either $NDK_ROOT should be set or provided as argument'
     echo "e.g., 'export NDK_ROOT=/path/to/ndk' or"
-    echo "      '${0} /path/to/ndk'"
     exit 1
-else
-    NDK_ROOT="${1:-${NDK_ROOT}}"
 fi
+
+TARGET_ABI=${1:-"armeabi-v7a,arm64-v8a,x86,x86_64"}
+N_JOBS=${2:-"16"}
+TARGET_ABIS=(`echo $TARGET_ABI | tr -s ',' ' '`)
+TARGET_API_LEVEL=${EXPORT_TARGET_API_LEVEL:-"21"}
 
 if [ "$(uname)" = "Darwin" ]; then
     OS=darwin
@@ -30,36 +35,43 @@ fi
 
 WD=$(readlink -f "`dirname $0`/..")
 LMDB_ROOT=${WD}/lmdb/libraries/liblmdb
-INSTALL_DIR=${WD}/android_lib
-N_JOBS=${N_JOBS:-4}
+INSTALL_DIR=${WD}/3rdparty/android-${TARGET_API_LEVEL}
 
-cd "${LMDB_ROOT}"
+BUILD_ABI=""
+for ABI in ${TARGET_ABIS[@]}; do
+    cd "${LMDB_ROOT}"
+    echo "ABI=${ABI}"
 
-if [ `expr substr "${ANDROID_ABI}" 1 7` = "armeabi" ]; then
-    TOOLCHAIN_DIR=$NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/${OS}-${BIT}/bin
-    CC="$TOOLCHAIN_DIR/arm-linux-androideabi-gcc --sysroot=$NDK_ROOT/platforms/android-21/arch-arm"
-    AR=$TOOLCHAIN_DIR/arm-linux-androideabi-ar
-elif [ "${ANDROID_ABI}" = "arm64-v8a" ]; then
-    TOOLCHAIN_DIR=$NDK_ROOT/toolchains/aarch64-linux-android-4.9/prebuilt/${OS}-${BIT}/bin
-    CC="$TOOLCHAIN_DIR/aarch64-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-21/arch-arm64"
-    AR=$TOOLCHAIN_DIR/aarch64-linux-android-ar
-elif [ "${ANDROID_ABI}" = "x86" ]; then
-    TOOLCHAIN_DIR=$NDK_ROOT/toolchains/x86-4.9/prebuilt/${OS}-${BIT}/bin
-    CC="$TOOLCHAIN_DIR/i686-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-21/arch-x86"
-    AR=$TOOLCHAIN_DIR/i686-linux-android-ar
-elif [ "${ANDROID_ABI}" = "x86_64" ]; then
-    TOOLCHAIN_DIR=$NDK_ROOT/toolchains/x86_64-4.9/prebuilt/${OS}-${BIT}/bin
-    CC="$TOOLCHAIN_DIR/x86_64-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-21/arch-x86_64"
-    AR=$TOOLCHAIN_DIR/x86_64-linux-android-ar
-else
-    echo "Error: not support LMDB for ABI: ${ANDROID_ABI}"
-    exit 1
-fi
+    if [ "${ABI}" = "armeabi-v7a" ]; then
+        TOOLCHAIN_DIR=$NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/${OS}-${BIT}/bin
+        CC="$TOOLCHAIN_DIR/arm-linux-androideabi-gcc --sysroot=$NDK_ROOT/platforms/android-${TARGET_API_LEVEL}/arch-arm"
+        AR=$TOOLCHAIN_DIR/arm-linux-androideabi-ar
+    elif [ "${ABI}" = "armeabi" ]; then
+        TOOLCHAIN_DIR=$NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/${OS}-${BIT}/bin
+        CC="$TOOLCHAIN_DIR/arm-linux-androideabi-gcc --sysroot=$NDK_ROOT/platforms/android-${TARGET_API_LEVEL}/arch-arm"
+        AR=$TOOLCHAIN_DIR/arm-linux-androideabi-ar
+    elif [ "${ABI}" = "arm64-v8a" ]; then
+        TOOLCHAIN_DIR=$NDK_ROOT/toolchains/aarch64-linux-android-4.9/prebuilt/${OS}-${BIT}/bin
+        CC="$TOOLCHAIN_DIR/aarch64-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-${TARGET_API_LEVEL}/arch-arm64"
+        AR=$TOOLCHAIN_DIR/aarch64-linux-android-ar
+    elif [ "${ABI}" = "x86" ]; then
+        TOOLCHAIN_DIR=$NDK_ROOT/toolchains/x86-4.9/prebuilt/${OS}-${BIT}/bin
+        CC="$TOOLCHAIN_DIR/i686-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-${TARGET_API_LEVEL}/arch-x86"
+        AR=$TOOLCHAIN_DIR/i686-linux-android-ar
+    elif [ "${ABI}" = "x86_64" ]; then
+        TOOLCHAIN_DIR=$NDK_ROOT/toolchains/x86_64-4.9/prebuilt/${OS}-${BIT}/bin
+        CC="$TOOLCHAIN_DIR/x86_64-linux-android-gcc --sysroot=$NDK_ROOT/platforms/android-${TARGET_API_LEVEL}/arch-x86_64"
+        AR=$TOOLCHAIN_DIR/x86_64-linux-android-ar
+    else
+        echo "Error: not support LMDB for ABI: ${ABI}"
+        exit 1
+    fi
 
-make clean
-make -j${N_JOBS} CC="${CC}" AR="${AR}" XCFLAGS="-DMDB_DSYNC=O_SYNC -DMDB_USE_ROBUST=0"
+    make clean
+    make -j${N_JOBS} CC="${CC}" AR="${AR}" XCFLAGS="-DMDB_DSYNC=O_SYNC -DMDB_USE_ROBUST=0"
 
-rm -rf "$INSTALL_DIR/lmdb"
-make prefix="$INSTALL_DIR/lmdb" install
+    rm -rf "$INSTALL_DIR/lmdb/${ABI}"
+    make prefix="$INSTALL_DIR/lmdb/${ABI}" install
 
-cd "${WD}"
+    cd "${WD}"
+done
