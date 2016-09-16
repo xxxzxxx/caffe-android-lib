@@ -12,13 +12,17 @@ Porting [caffe](https://github.com/BVLC/caffe) to android platform
 ## Build
 Tested with Android NDK r10e and cmake 3.4.2 on OSX and Ubuntu 14.04
 
-### Setup OSX
-
+### Setup
 android ndk has been installed
 
 ```shell
 export NDK_ROOT="<android-ndk-root-path>"
+```
+
+### Setup OSX
+
 Create a symbolic link of greadlink named readlink
+```shell
 brew install coreutils gnu-sed gawk
 cd /usr/local/bin
 ln -s greadlink readlink
