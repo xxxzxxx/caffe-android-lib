@@ -1,6 +1,6 @@
-#!/usr/bin/env sh
-set -e
-N_JOBS=${1:16}
+#!/usr/bin/env bash
+
+N_JOBS=${1:-"16"}
 
 WD=$(readlink -f "`dirname $0`/..")
 PROTOBUF_ROOT=${WD}/protobuf

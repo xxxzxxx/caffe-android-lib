@@ -1,5 +1,4 @@
-#!/usr/bin/env sh
-set -e
+#!/usr/bin/env bash
 
 if [ "$#" -eq 0 ]; then
     echo "      '${0} armeabi-v7a,arm64-v8a,x86,x86_64'"
@@ -12,7 +11,7 @@ fi
 
 TARGET_ABI=${1:-"armeabi-v7a,arm64-v8a,x86,x86_64"}
 N_JOBS=${2:-"16"}
-TARGET_ABIS=(`echo $TARGET_ABI | tr -s ',' ' '`)
+TARGET_ABIS=$(echo $TARGET_ABI | tr -s ',' ' ')
 TARGET_API_LEVEL=${EXPORT_TARGET_API_LEVEL:-"21"}
 
 if [ "$(uname)" = "Darwin" ]; then

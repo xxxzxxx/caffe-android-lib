@@ -1,4 +1,5 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
 [[ -n $DEBUG_BUILD ]] && set -x
 
 EIGEN_VER1=3

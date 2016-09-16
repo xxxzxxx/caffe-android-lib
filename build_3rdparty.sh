@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 if [ -z "$NDK_ROOT" ]; then
     echo "Either NDK_ROOT should be set or provided as argument"
